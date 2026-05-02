@@ -1,0 +1,66 @@
+import { RequestHandler } from 'express'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
+import Redis from 'ioredis'
+import RedisStore from 'rate-limit-redis'
+import { RateLimiterRedis } from 'rate-limiter-flexible'
+import { ApiError } from '../utils/error'
+import { logger } from '../utils/logger'
+
+
+const redisClient = new Redis()
+
+redisClient.on('error', (err) => {
+    logger.error('Redis error', err);
+});
+
+const rateLimiter = new RateLimiterRedis({
+    points: 100,
+    duration: 1,
+    storeClient: redisClient,
+    keyPrefix: 'middleWare'
+})
+
+const redisStore = new RedisStore({
+    sendCommand: (...args: any[]) => (redisClient.call as any).apply(redisClient, args) as Promise<any>,
+})
+
+const sensitiveRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    legacyHeaders: false,
+    standardHeaders: true,
+   keyGenerator: (req) => {
+  const ip =
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    req.socket.remoteAddress ||
+    req.ip;
+
+
+  return `${ipKeyGenerator(ip||'')}:${req.baseUrl}${req.path}`;
+},
+    handler: (req, _res, next) => {
+        logger.warn(`Sensitive endpoint rate limit exceeds for IP: ${req.ip}`)
+        const err = new ApiError('Too many requests', 429, 'limit-exceeded'
+        )
+        next(err)
+    },
+    store: redisStore
+
+
+})
+
+const limitHandler: RequestHandler = async (req, _res, next) => {
+    if (!req.ip) throw new ApiError('Request not allowed, Cannot get request IP', 422, 'Error')
+    try {
+        await rateLimiter.consume(req.ip)
+        next()
+    } catch {
+        logger.warn(`Rate limit exceeded for IP: ${req.ip}`)
+        const err = new ApiError('Too many requests', 429, 'limit-exceeded'
+        )
+        next(err)
+    }
+}
+
+export { limitHandler, rateLimiter, sensitiveRateLimit }
+
