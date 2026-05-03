@@ -3,11 +3,12 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import Redis from 'ioredis'
 import RedisStore from 'rate-limit-redis'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
+import { REDIS_URL } from '../config'
 import { ApiError } from '../utils/error'
 import { logger } from '../utils/logger'
 
 
-const redisClient = new Redis()
+const redisClient = new Redis(REDIS_URL || "redis://localhost:6379")
 
 redisClient.on('error', (err) => {
     logger.error('Redis error', err);
@@ -29,15 +30,15 @@ const sensitiveRateLimit = rateLimit({
     limit: 5,
     legacyHeaders: false,
     standardHeaders: true,
-   keyGenerator: (req) => {
-  const ip =
-    (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
-    req.socket.remoteAddress ||
-    req.ip;
+    keyGenerator: (req) => {
+        const ip =
+            (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+            req.socket.remoteAddress ||
+            req.ip;
 
 
-  return `${ipKeyGenerator(ip||'')}:${req.baseUrl}${req.path}`;
-},
+        return `${ipKeyGenerator(ip || '')}:${req.baseUrl}${req.path}`;
+    },
     handler: (req, _res, next) => {
         logger.warn(`Sensitive endpoint rate limit exceeds for IP: ${req.ip}`)
         const err = new ApiError('Too many requests', 429, 'limit-exceeded'

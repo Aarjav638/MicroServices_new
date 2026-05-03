@@ -1,5 +1,6 @@
 import RabbitMQ from "@aarjavjain/rabbitmq";
 import { isValidObjectId } from "mongoose";
+import { RABBITMQ_HOST, RABBITMQ_PASSWORD, RABBITMQ_PORT, RABBITMQ_USER } from "../config";
 import Search, { ISearch } from "../models/SearchSchema";
 import { ApiError } from "./error";
 import { logger } from "./logger";
@@ -14,10 +15,10 @@ export const UPDATE_QUEUE = "search.update"
 
 export const rabbitClient = new RabbitMQ({
     config: {
-        hostname: "localhost",
-        port: 5672,
-        username: "guest",
-        password: "guest"
+        hostname: RABBITMQ_HOST || "localhost",
+        port: Number(RABBITMQ_PORT || '5672'),
+        username: RABBITMQ_USER || "guest",
+        password: RABBITMQ_PASSWORD || "guest"
     },
     exchanges: [EXCHANGE],
     queues: [CREATE_QUEUE, DELETE_QUEUE, UPDATE_QUEUE],

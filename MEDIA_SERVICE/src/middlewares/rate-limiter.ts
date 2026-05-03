@@ -1,18 +1,18 @@
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import Redis from 'ioredis'
 import RedisStore from 'rate-limit-redis'
+import { REDIS_URL } from '../config'
 import { ApiError } from '../utils/error'
 import { logger } from '../utils/logger'
 
-
-export const redisClient = new Redis()
+export const redisClient = new Redis(REDIS_URL || "redis://localhost:6379")
 
 redisClient.on('error', (err) => {
     logger.error('Redis error', err);
 });
 
 
-const sensitiveRateLimit = (limit = 20, windowMs=15 * 60 * 1000) => rateLimit({
+const sensitiveRateLimit = (limit = 20, windowMs = 15 * 60 * 1000) => rateLimit({
     windowMs: windowMs,
     limit: limit,
     legacyHeaders: false,

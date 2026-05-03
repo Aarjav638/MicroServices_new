@@ -1,4 +1,5 @@
 import RabbitMQ from "@aarjavjain/rabbitmq";
+import { RABBITMQ_HOST, RABBITMQ_PASSWORD, RABBITMQ_PORT, RABBITMQ_USER } from "../config";
 import { logger } from "./logger";
 
 export type MediaDeleteEvent = {
@@ -23,10 +24,10 @@ export const EXCHANGE = 'social_events'
 export const MEDIAQUEUE = 'media'
 export const rabbitClient = new RabbitMQ({
     config: {
-        hostname: 'localhost',
-        username: 'guest',
-        password: 'guest',
-        port: 5672
+        hostname: RABBITMQ_HOST || "localhost",
+        port: Number(RABBITMQ_PORT || '5672'),
+        username: RABBITMQ_USER || "guest",
+        password: RABBITMQ_PASSWORD || "guest"
     },
     serviceName: 'Post Service',
     queues: [MEDIAQUEUE],

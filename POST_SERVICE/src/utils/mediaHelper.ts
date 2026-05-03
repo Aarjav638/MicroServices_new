@@ -1,5 +1,5 @@
 import axios from "axios";
-import { GATEWAY_URL } from "../config";
+import { MEDIA_SERVICE_URL } from "../config";
 import { ApiError } from "./error";
 
 export interface Media {
@@ -90,4 +90,4 @@ export class MediaClient implements MediaContract {
 }
 
 
-export const mediaClient = new MediaClient(`${GATEWAY_URL}/media`)
+export const mediaClient = new MediaClient(`${MEDIA_SERVICE_URL}/media`)

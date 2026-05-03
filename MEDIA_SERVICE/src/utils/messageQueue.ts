@@ -1,5 +1,6 @@
 import RabbitMQ from "@aarjavjain/rabbitmq";
 import { isValidObjectId } from "mongoose";
+import { RABBITMQ_HOST, RABBITMQ_PASSWORD, RABBITMQ_PORT, RABBITMQ_USER } from "../config";
 import { redisClient } from "../middlewares/rate-limiter";
 import Media from "../models/Media";
 import { deleteCachePattern } from "./cache";
@@ -17,10 +18,10 @@ type MediaDeleteEvent = {
 }
 export const rabbitClient = new RabbitMQ({
     config: {
-        hostname: 'localhost',
-        username: 'guest',
-        password: 'guest',
-        port: 5672
+        hostname: RABBITMQ_HOST || "localhost",
+        port: Number(RABBITMQ_PORT || '5672'),
+        username: RABBITMQ_USER || "guest",
+        password: RABBITMQ_PASSWORD || "guest"
     },
     serviceName: 'Media Service',
     queues: [MEDIAQUEUE],

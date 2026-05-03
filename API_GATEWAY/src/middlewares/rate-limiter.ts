@@ -1,11 +1,12 @@
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import Redis from 'ioredis'
 import RedisStore from 'rate-limit-redis'
+import { REDIS_URL } from '../config'
 import { ApiError } from '../utils/error'
 import { logger } from '../utils/logger'
 
 
-const redisClient = new Redis()
+const redisClient = new Redis(REDIS_URL || "redis://localhost:6379")
 
 redisClient.on('error', (err) => {
     logger.error('Redis error', err);

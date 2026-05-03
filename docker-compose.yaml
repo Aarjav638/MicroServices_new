@@ -1,0 +1,94 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+  rabbit:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  gateway-service:
+    build: ./API_GATEWAY
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - MEDIA_SERVICE_URL=http://media-service:3002
+      - POST_SERVICE_URL=http://post-service:3003
+      - SEARCH_SERVICE_URL=http://search-service:3004
+      - REDIS_URL=redis://redis:6379
+    env_file: ./API_GATEWAY/.env
+    depends_on:
+      redis:
+        condition: service_started
+
+  auth-service:
+    build: ./AUTH_SERVICE
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+    env_file: ./AUTH_SERVICE/.env
+    depends_on:
+      redis:
+        condition: service_started
+    expose:
+      - 3001
+
+  post-service:
+    build: ./POST_SERVICE
+    environment:
+      - PORT=3003
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - MEDIA_SERVICE_URL=http://media-service:3002
+    env_file: ./POST_SERVICE/.env
+    depends_on:
+      redis:
+        condition: service_started
+      rabbit:
+        condition: service_healthy
+    expose:
+      - 3003
+
+  media-service:
+    build: ./MEDIA_SERVICE
+    environment:
+      - PORT=3002
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+    env_file: ./MEDIA_SERVICE/.env
+    depends_on:
+      redis:
+        condition: service_started
+      rabbit:
+        condition: service_healthy
+    expose:
+      - 3002
+
+  search-service:
+    build: ./SEARCH_SERVICE
+    environment:
+      - PORT=3004
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+    env_file: ./SEARCH_SERVICE/.env
+    depends_on:
+      redis:
+        condition: service_started
+      rabbit:
+        condition: service_healthy
+    expose:
+      - 3004
